@@ -1,31 +1,31 @@
-# Use the official PHP image with Apache
-FROM php:8.2-apache
+# Use an official PHP runtime as a parent image
+FROM php:8.1-fpm
 
-# Install required extensions
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
+    unzip \
+    curl \
+    git \
     libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    && docker-php-ext-configure gd \
-    && docker-php-ext-install gd pdo pdo_mysql
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set working directory
+# Set the working directory inside the container
 WORKDIR /var/www/html
 
-# Copy project files
+# Copy the application files into the container
 COPY . .
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Expose port 80
+# Expose port 80 to allow connections
 EXPOSE 80
 
-# Start Apache server
-CMD ["apache2-foreground"]
+# Start the PHP server
+CMD ["php", "-S", "0.0.0.0:80", "-t", "public"]
